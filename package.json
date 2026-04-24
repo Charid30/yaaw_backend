@@ -1,6 +1,6 @@
 {
   "name": "yaahw-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Yaahw — Backend API (POS configurable multi-contextes)",
   "main": "server.js",
   "scripts": {
@@ -31,7 +31,8 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "mysql2": "^3.16.2",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

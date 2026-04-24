@@ -2,23 +2,18 @@
 const express = require('express');
 const router = express.Router();
 
-// ─────────────────────────────────────────────────
-// IMPORTER LES ROUTES
-// ─────────────────────────────────────────────────
-// const authRoutes = require('./auth.routes');
-// const productRoutes = require('./product.routes');
+// ── Routes ───────────────────────────────────────────────────
+const authRoutes = require('./auth.routes');
 
-// ─────────────────────────────────────────────────
-// MONTER LES ROUTES
-// ─────────────────────────────────────────────────
-// router.use('/auth', authRoutes);
-// router.use('/products', productRoutes);
+// ── Montage ──────────────────────────────────────────────────
+router.use('/auth', authRoutes);
 
-// Healthcheck
+// ── Healthcheck ──────────────────────────────────────────────
 router.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'API YAAHW fonctionne correctement',
+    message: 'API YAAHW fonctionne correctement.',
+    version: '0.2.0',
     timestamp: new Date().toISOString(),
   });
 });

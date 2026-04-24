@@ -1,26 +1,17 @@
 // src/models/index.js
 const { sequelize } = require('../config/database');
 
-// =====================================================
-// IMPORTER LES MODÈLES
-// =====================================================
-// Les modèles seront ajoutés au fur et à mesure des features.
-// Exemple :
-//   const User = require('./User')(sequelize);
-//   const Product = require('./Product')(sequelize);
+// ── Modèles ──────────────────────────────────────────────────
+const User         = require('./User')(sequelize);
+const RevokedToken = require('./RevokedToken')(sequelize);
 
-// =====================================================
-// DÉFINIR LES ASSOCIATIONS
-// =====================================================
-// Exemple :
-//   User.hasMany(Product, { foreignKey: 'userId', as: 'products' });
-//   Product.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+// ── Associations ─────────────────────────────────────────────
+User.hasMany(RevokedToken, { foreignKey: 'user_id', as: 'revokedTokens' });
+RevokedToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-// =====================================================
-// EXPORT
-// =====================================================
+// ── Export ───────────────────────────────────────────────────
 module.exports = {
   sequelize,
-  // User,
-  // Product,
+  User,
+  RevokedToken,
 };
