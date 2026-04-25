@@ -65,4 +65,24 @@ const getActivity = async (req, res) => {
   }
 };
 
-module.exports = { overview, getShops, updateShop, getUsers, toggleUser, getActivity };
+/** POST /api/admin/gerants */
+const createGerant = async (req, res) => {
+  try {
+    const user = await adminService.createGerant(req.body);
+    return success(res, { user }, 'Gérant créé avec succès.', 201);
+  } catch (err) {
+    return error(res, err.message, err.status || 500);
+  }
+};
+
+/** DELETE /api/admin/gerants/:id */
+const deleteGerant = async (req, res) => {
+  try {
+    await adminService.deleteGerant(req.params.id);
+    return success(res, null, 'Gérant supprimé.');
+  } catch (err) {
+    return error(res, err.message, err.status || 500);
+  }
+};
+
+module.exports = { overview, getShops, updateShop, getUsers, toggleUser, getActivity, createGerant, deleteGerant };

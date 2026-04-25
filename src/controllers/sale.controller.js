@@ -19,8 +19,8 @@ const create = async (req, res) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page, limit, date_debut, date_fin, mode_paiement, customer_id } = req.query;
-    const result = await saleService.getSales(req.shop.id, { page, limit, date_debut, date_fin, mode_paiement, customer_id });
+    const { page, limit, date_debut, date_fin, mode_paiement, customer_id, search } = req.query;
+    const result = await saleService.getSales(req.shop.id, { page, limit, date_debut, date_fin, mode_paiement, customer_id, search });
     return paginate(res, result.sales, result.page, result.limit, result.total, `${result.total} vente(s).`);
   } catch (err) {
     return error(res, err.message, err.status || 500);

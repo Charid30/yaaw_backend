@@ -143,7 +143,7 @@ const createSale = async ({ items, mode_paiement, montant_recu, note, customer_i
 /**
  * Historique des ventes (paginé)
  */
-const getSales = async (shop_id, { page = 1, limit = 20, date_debut, date_fin, mode_paiement, customer_id } = {}) => {
+const getSales = async (shop_id, { page = 1, limit = 20, date_debut, date_fin, mode_paiement, customer_id, search } = {}) => {
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   const where = { shop_id };
@@ -159,15 +159,65 @@ const getSales = async (shop_id, { page = 1, limit = 20, date_debut, date_fin, m
     }
   }
 
-  const { count, rows } = await Sale.findAndCountAll({
+  // Recherche textuelle : filtre sur le nom du client OU le nom d'un produit dans les items
+  const includeCustomer = {
+    model:      Customer,
+    as:         'customer',
+    required:   false,
+    attributes: ['id', 'nom'],
+    ...(search ? { where: { nom: { [Op.like]: `%${search}%` } } } : {}),
+  };
+  const includeItems = {
+    model:      SaleItem,
+    as:         'items',
+    ...(search ? { where: { nom_produit: { [Op.like]: `%${search}%` } } } : {}),
+    required:   !!search, // INNER JOIN si search, LEFT JOIN sinon
+  };
+
+  // Quand on cherche, on veut les ventes qui matchent SOIT par client SOIT par produit
+  const findOpts = {
     where,
+    order:  [['created_at', 'DESC']],
+    limit:  parseInt(limit),
+    offset,
+    distinct: true,
+  };
+
+  if (search) {
+    // Sous-requête : IDs de ventes qui ont un item avec ce nom
+    const itemMatches = await SaleItem.findAll({
+      where: { nom_produit: { [Op.like]: `%${search}%` } },
+      attributes: ['sale_id'],
+      raw: true,
+    });
+    const saleIdsFromItems = itemMatches.map(i => i.sale_id);
+
+    // Sous-requête : IDs de ventes dont le client a ce nom
+    const custMatches = await Customer.findAll({
+      where: { nom: { [Op.like]: `%${search}%` }, shop_id },
+      attributes: ['id'],
+      raw: true,
+    });
+    const custIds = custMatches.map(c => c.id);
+    const saleIdsFromCustomers = custIds.length ? await Sale.findAll({
+      where: { shop_id, customer_id: { [Op.in]: custIds } },
+      attributes: ['id'],
+      raw: true,
+    }).then(r => r.map(s => s.id)) : [];
+
+    const matchingIds = [...new Set([...saleIdsFromItems, ...saleIdsFromCustomers])];
+    if (matchingIds.length === 0) {
+      return { sales: [], total: 0, page: parseInt(page), limit: parseInt(limit), totalPages: 0 };
+    }
+    findOpts.where = { ...where, id: { [Op.in]: matchingIds } };
+  }
+
+  const { count, rows } = await Sale.findAndCountAll({
+    ...findOpts,
     include: [
       { model: SaleItem, as: 'items' },
       { model: Customer, as: 'customer', required: false, attributes: ['id', 'nom'] },
     ],
-    order:   [['created_at', 'DESC']],
-    limit:   parseInt(limit),
-    offset,
   });
   return {
     sales:      rows.map(sanitizeSale),

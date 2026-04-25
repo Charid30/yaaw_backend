@@ -1,4 +1,6 @@
 // src/services/admin.service.js
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
 const { sequelize, Shop, User, Sale, SaleItem, Customer } = require('../models');
 
@@ -276,4 +278,54 @@ const getActivity = async ({ page = 1, limit = 30 } = {}) => {
   };
 };
 
-module.exports = { getOverview, getShops, updateShopModules, getUsers, toggleUser, getActivity };
+// ── Création d'un gérant ─────────────────────────────────────
+
+const createGerant = async ({ nom, prenom, telephone, password }) => {
+  if (!nom?.trim() || !prenom?.trim() || !telephone?.trim() || !password) {
+    const err = new Error('Tous les champs sont requis.'); err.status = 400; throw err;
+  }
+  if (password.length < 6) {
+    const err = new Error('Le mot de passe doit contenir au moins 6 caractères.'); err.status = 400; throw err;
+  }
+
+  const existing = await User.findOne({ where: { telephone: telephone.trim() } });
+  if (existing) {
+    const err = new Error('Ce numéro de téléphone est déjà utilisé.'); err.status = 409; throw err;
+  }
+
+  const hash = await bcrypt.hash(password, 12);
+  const user = await User.create({
+    id:        uuidv4(),
+    nom:       nom.trim(),
+    prenom:    prenom.trim(),
+    telephone: telephone.trim(),
+    password:  hash,
+    role:      'GERANT',
+    is_active: 1,
+  });
+
+  return {
+    id:         user.id,
+    nom:        user.nom,
+    prenom:     user.prenom,
+    telephone:  user.telephone,
+    role:       user.role,
+    is_active:  !!user.is_active,
+    created_at: user.created_at,
+    shop:       null,
+  };
+};
+
+// ── Suppression d'un gérant ──────────────────────────────────
+
+const deleteGerant = async (userId) => {
+  const user = await User.findOne({ where: { id: userId, role: 'GERANT' } });
+  if (!user) {
+    const err = new Error('Gérant introuvable.'); err.status = 404; throw err;
+  }
+  // Dissocier la boutique avant suppression (ne pas supprimer la boutique)
+  await Shop.update({ owner_id: null }, { where: { owner_id: userId } });
+  await user.destroy();
+};
+
+module.exports = { getOverview, getShops, updateShopModules, getUsers, toggleUser, getActivity, createGerant, deleteGerant };

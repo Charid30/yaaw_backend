@@ -26,6 +26,10 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '8h',
 
+  // Inscription publique : mettre à "true" seulement en dev/demo.
+  // En production, seul l'admin crée les comptes gérant.
+  ALLOW_PUBLIC_REGISTER: process.env.ALLOW_PUBLIC_REGISTER === 'true',
+
   // Application
   APP_NAME: process.env.APP_NAME || 'YAAHW',
   APP_URL:

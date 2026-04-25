@@ -25,10 +25,15 @@ const errorHandler = (err, req, res, next) => {
     }
   }
 
-  res.status(statusCode).json({
-    success: false,
-    message: statusCode === 500 ? 'Une erreur interne est survenue.' : err.message,
-  });
+  // En développement on expose le vrai message pour faciliter le debug.
+  // En production on masque les erreurs 500 (sécurité : ne pas fuiter l'état interne).
+  const isDev = process.env.NODE_ENV !== 'production';
+  const message =
+    statusCode === 500 && !isDev
+      ? 'Une erreur interne est survenue.'
+      : err.message;
+
+  res.status(statusCode).json({ success: false, message });
 };
 
 module.exports = { notFound, errorHandler };

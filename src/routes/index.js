@@ -33,7 +33,7 @@ router.get('/health', (req, res) => {
   res.json({
     success: true,
     message: 'API YAAHW fonctionne correctement.',
-    version: '0.10.0',
+    version: '0.11.0',
     timestamp: new Date().toISOString(),
   });
 });
