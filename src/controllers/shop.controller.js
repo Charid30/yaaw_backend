@@ -21,7 +21,11 @@ const create = async (req, res) => {
  */
 const getMyShop = async (req, res) => {
   try {
-    const shop = await shopService.getMyShop(req.user.id);
+    // Un caissier n'est pas owner — on cherche directement par shop_id du token
+    const shopId = req.user.role === 'CAISSIER' ? req.user.shop_id : null;
+    const shop   = shopId
+      ? await shopService.getShopById(shopId)
+      : await shopService.getMyShop(req.user.id);
     return success(res, { shop }, 'Boutique récupérée.');
   } catch (err) {
     return error(res, err.message, err.status || 500);

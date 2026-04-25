@@ -58,6 +58,12 @@ const getMyShop = async (owner_id) => {
   return sanitize(shop);
 };
 
+const getShopById = async (shopId) => {
+  const shop = await Shop.findByPk(shopId);
+  if (!shop) throw notFound('Boutique introuvable.');
+  return sanitize(shop);
+};
+
 /**
  * Toutes les boutiques — ADMIN uniquement
  */
@@ -84,4 +90,4 @@ const updateShop = async (owner_id, updates) => {
   return sanitize(shop);
 };
 
-module.exports = { createShop, getMyShop, getAllShops, updateShop };
+module.exports = { createShop, getMyShop, getShopById, getAllShops, updateShop };
