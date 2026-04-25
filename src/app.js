@@ -84,10 +84,9 @@ app.use(helmet());
 // CORS restreint
 app.use(cors(corsOptions));
 
-// Taille max du body — 200kb pour couvrir les gros objets JSON (produits, modules…)
-// L'upload de fichiers passe par multer, pas par ce parser
-app.use(express.json({ limit: '200kb' }));
-app.use(express.urlencoded({ extended: true, limit: '200kb' }));
+// Taille max du body — 10mb (fichiers passent par multer, cette limite couvre les JSON)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Sanitisation des inputs (Express 5 : req.query est read-only → body et params uniquement)
 app.use((req, res, next) => {
