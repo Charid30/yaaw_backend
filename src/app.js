@@ -84,9 +84,10 @@ app.use(helmet());
 // CORS restreint
 app.use(cors(corsOptions));
 
-// Taille max du body (50kb suffit pour une API sans upload — multer gère l'upload)
-app.use(express.json({ limit: '50kb' }));
-app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+// Taille max du body — 200kb pour couvrir les gros objets JSON (produits, modules…)
+// L'upload de fichiers passe par multer, pas par ce parser
+app.use(express.json({ limit: '200kb' }));
+app.use(express.urlencoded({ extended: true, limit: '200kb' }));
 
 // Sanitisation des inputs (Express 5 : req.query est read-only → body et params uniquement)
 app.use((req, res, next) => {

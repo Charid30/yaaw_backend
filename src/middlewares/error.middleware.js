@@ -13,7 +13,9 @@ const notFound = (req, res, next) => {
  * Middleware global de gestion des erreurs
  */
 const errorHandler = (err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  // body-parser (et d'autres middlewares) posent leur code sur err.status / err.statusCode
+  // plutôt que sur res.statusCode — on les prend en priorité
+  const statusCode = err.status || err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
 
   // Log côté serveur uniquement, jamais renvoyé au client
   if (process.env.NODE_ENV !== 'test') {
