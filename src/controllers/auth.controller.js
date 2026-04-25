@@ -74,4 +74,16 @@ const me = async (req, res) => {
   }
 };
 
-module.exports = { register, login, logout, me };
+/**
+ * PATCH /api/auth/password
+ */
+const changePassword = async (req, res) => {
+  try {
+    await authService.changePassword(req.user.id, req.body);
+    return success(res, null, 'Mot de passe modifié avec succès.');
+  } catch (err) {
+    return error(res, err.message, err.status || 500);
+  }
+};
+
+module.exports = { register, login, logout, me, changePassword };

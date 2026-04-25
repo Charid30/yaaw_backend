@@ -40,6 +40,7 @@ const authenticate = async (req, res, next) => {
       prenom:    decoded.prenom,
       telephone: decoded.telephone,
       role:      decoded.role,
+      shop_id:   decoded.shop_id || null,
     };
 
     next();

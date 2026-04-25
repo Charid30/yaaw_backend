@@ -53,6 +53,12 @@ module.exports = (sequelize) => {
         allowNull: true,
         defaultValue: null,
       },
+      shop_id: {
+        type: DataTypes.CHAR(36),
+        allowNull: true,
+        defaultValue: null,
+        comment: 'FK → shops.id (pour les CAISSIERS uniquement)',
+      },
     },
     {
       tableName: 'users',

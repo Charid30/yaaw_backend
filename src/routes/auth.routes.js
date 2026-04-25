@@ -19,4 +19,7 @@ router.post('/logout', authenticate, authController.logout);
 // GET /api/auth/me  (protégé)
 router.get('/me', authenticate, authController.me);
 
+// PATCH /api/auth/password  (protégé)
+router.patch('/password', authenticate, authController.changePassword);
+
 module.exports = router;

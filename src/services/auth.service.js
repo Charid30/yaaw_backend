@@ -74,13 +74,14 @@ const login = async ({ telephone, password }) => {
   await user.update({ last_login: new Date() });
 
   // Générer le token
-  const token = generateToken({
-    id: user.id,
-    nom: user.nom,
-    prenom: user.prenom,
-    telephone: user.telephone,
-    role: user.role,
-  });
+  const tokenPayload = {
+    id: user.id, nom: user.nom, prenom: user.prenom,
+    telephone: user.telephone, role: user.role,
+  };
+  if (user.role === 'CAISSIER' && user.shop_id) {
+    tokenPayload.shop_id = user.shop_id;
+  }
+  const token = generateToken(tokenPayload);
 
   return { user: _sanitize(user), token };
 };
@@ -116,4 +117,32 @@ const _sanitize = (user) => {
   return safe;
 };
 
-module.exports = { register, login, logout, getMe };
+/**
+ * Changer le mot de passe de l'utilisateur connecté
+ */
+const changePassword = async (userId, { ancien_mot_de_passe, nouveau_mot_de_passe }) => {
+  const user = await User.findByPk(userId);
+  if (!user) {
+    const err = new Error('Utilisateur introuvable.');
+    err.status = 404;
+    throw err;
+  }
+
+  const valid = await bcrypt.compare(ancien_mot_de_passe, user.password);
+  if (!valid) {
+    const err = new Error('Mot de passe actuel incorrect.');
+    err.status = 400;
+    throw err;
+  }
+
+  if (nouveau_mot_de_passe.length < 6) {
+    const err = new Error('Le nouveau mot de passe doit contenir au moins 6 caractères.');
+    err.status = 400;
+    throw err;
+  }
+
+  const hash = await bcrypt.hash(nouveau_mot_de_passe, 12);
+  await user.update({ password: hash });
+};
+
+module.exports = { register, login, logout, getMe, changePassword };

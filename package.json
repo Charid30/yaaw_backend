@@ -1,6 +1,6 @@
 {
   "name": "yaahw-backend",
-  "version": "0.2.0",
+  "version": "0.6.0",
   "description": "Yaahw — Backend API (POS configurable multi-contextes)",
   "main": "server.js",
   "scripts": {
