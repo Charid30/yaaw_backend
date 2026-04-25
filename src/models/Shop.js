@@ -38,6 +38,21 @@ module.exports = (sequelize) => {
         type: DataTypes.JSON,
         allowNull: false,
         defaultValue: { stock: true, commandes: false, rapports: true },
+        // MySQL/Sequelize peut retourner le JSON sous forme de string brute
+        // selon la version du driver — on force le parsing systématiquement.
+        get() {
+          const raw = this.getDataValue('modules');
+          if (!raw) return { stock: true, commandes: false, rapports: true };
+          if (typeof raw === 'string') {
+            try { return JSON.parse(raw); } catch { return {}; }
+          }
+          return raw;
+        },
+        set(val) {
+          this.setDataValue('modules',
+            typeof val === 'string' ? val : JSON.stringify(val)
+          );
+        },
       },
       owner_id: {
         type: DataTypes.CHAR(36),
