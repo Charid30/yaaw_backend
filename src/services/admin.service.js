@@ -143,16 +143,41 @@ const getShops = async ({ page = 1, limit = 20, search } = {}) => {
   };
 };
 
-const updateShopModules = async (shopId, { modules, is_configured }) => {
+const updateShopModules = async (shopId, data) => {
+  if (!shopId) {
+    const err = new Error('ID boutique manquant.');
+    err.status = 400;
+    throw err;
+  }
+
   const shop = await Shop.findByPk(shopId);
   if (!shop) {
     const err = new Error('Boutique introuvable.');
     err.status = 404;
     throw err;
   }
-  if (modules !== undefined) await shop.update({ modules });
-  if (is_configured !== undefined) await shop.update({ is_configured });
-  return { id: shop.id, nom: shop.nom, modules: shop.modules, is_configured: shop.is_configured };
+
+  const { modules, is_configured } = data || {};
+
+  // Sequelize ne détecte pas toujours les changements sur les champs JSON :
+  // on force explicitement le dirty-tracking avec changed() + save()
+  if (modules !== undefined) {
+    shop.modules = modules;
+    shop.changed('modules', true);
+  }
+  if (is_configured !== undefined) {
+    shop.is_configured = is_configured;
+    shop.changed('is_configured', true);
+  }
+
+  await shop.save();
+
+  return {
+    id:            shop.id,
+    nom:           shop.nom,
+    modules:       shop.modules,
+    is_configured: shop.is_configured,
+  };
 };
 
 // ── Gérants ──────────────────────────────────────────────────
