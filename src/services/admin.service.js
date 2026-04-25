@@ -164,7 +164,19 @@ const updateShopModules = async (shopId, data) => {
   // Sequelize ne détecte pas toujours les changements sur les champs JSON :
   // on force explicitement le dirty-tracking avec changed() + save()
   if (modules !== undefined) {
-    shop.modules = modules;
+    // Sécurité : n'accepter que les clés de modules reconnues et leurs valeurs booléennes.
+    // Empêche de stocker en base n'importe quoi envoyé par le client
+    // (ex: objet corrompu {0:"{", 1:"s", ...} issu d'un spread de string).
+    const KNOWN_MODULES = ['stock', 'rapports', 'commandes'];
+    const sanitized = {};
+    for (const key of KNOWN_MODULES) {
+      if (key in modules) {
+        sanitized[key] = !!modules[key]; // force boolean
+      }
+    }
+    // Fusionner avec les modules actuels pour ne pas perdre les clés non envoyées
+    const current = shop.modules || {};
+    shop.modules = { ...current, ...sanitized };
     shop.changed('modules', true);
   }
   if (is_configured !== undefined) {
