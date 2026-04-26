@@ -4,12 +4,18 @@ const { sequelize, Sale, SaleItem, Product, Shop, StockMovement, Customer } = re
 
 // ── Helpers ──────────────────────────────────────────────────
 
-const sanitizeSale = (sale) => ({
+const sanitizeSale = (sale) => {
+  const rawNom = sale.dataValues?.customer_nom ?? sale.customer_nom ?? null;
+  return {
   id:              sale.id,
   shop_id:         sale.shop_id,
   caissier_id:     sale.caissier_id,
   customer_id:     sale.customer_id,
-  customer:        sale.customer ? { id: sale.customer.id, nom: sale.customer.nom } : null,
+  customer_nom:    rawNom,
+  customer: (() => {
+    if (sale.customer) return { id: sale.customer.id, nom: sale.customer.nom };
+    return rawNom ? { id: null, nom: rawNom } : null;
+  })(),
   remise_montant:  parseFloat(sale.remise_montant ?? 0),
   montant_total:   parseFloat(sale.montant_total),
   montant_recu:    parseFloat(sale.montant_recu),
@@ -20,7 +26,8 @@ const sanitizeSale = (sale) => ({
   items:           (sale.items || []).map(sanitizeItem),
   created_at:      sale.created_at,
   updated_at:      sale.updated_at,
-});
+  };
+};
 
 const sanitizeItem = (item) => ({
   id:            item.id,
@@ -37,7 +44,7 @@ const sanitizeItem = (item) => ({
 /**
  * Créer une vente avec décrément de stock atomique
  */
-const createSale = async ({ items, mode_paiement, montant_recu, note, customer_id, remise_montant = 0 }, shop_id, caissier_id) => {
+const createSale = async ({ items, mode_paiement, montant_recu, note, customer_id, customer_nom, remise_montant = 0 }, shop_id, caissier_id) => {
   // Vérifier que le client appartient bien à cette boutique
   if (customer_id) {
     const cust = await Customer.findOne({ where: { id: customer_id, shop_id } });
@@ -97,7 +104,13 @@ const createSale = async ({ items, mode_paiement, montant_recu, note, customer_i
   // 4. Transaction atomique
   const sale = await sequelize.transaction(async (t) => {
     const newSale = await Sale.create(
-      { shop_id, caissier_id, customer_id: customer_id || null, remise_montant: remise, montant_total, montant_recu, monnaie_rendue, mode_paiement, tva_montant, note: note || null },
+      {
+        shop_id, caissier_id,
+        customer_id:  customer_id  || null,
+        customer_nom: customer_id  ? null : (customer_nom?.trim() || null), // nom libre seulement si pas de client DB
+        remise_montant: remise, montant_total, montant_recu, monnaie_rendue, mode_paiement, tva_montant,
+        note: note || null,
+      },
       { transaction: t }
     );
 

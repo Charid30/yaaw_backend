@@ -24,13 +24,35 @@ const getLocalIP = () => {
   return 'localhost';
 };
 
+/**
+ * Migrations légères : ajoute les colonnes manquantes sans toucher aux données existantes.
+ * Idempotent — peut être exécuté à chaque démarrage.
+ */
+const runMigrations = async (sequelize) => {
+  const migrations = [
+    // v0.12 — nom libre du client sur une vente
+    `ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_id   CHAR(36)     NULL AFTER remise_montant`,
+    `ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_nom  VARCHAR(150) NULL AFTER customer_id`,
+  ];
+  for (const sql of migrations) {
+    try {
+      await sequelize.query(sql);
+    } catch (err) {
+      // Ignorer si la colonne existe déjà (MySQL < 8 ne supporte pas IF NOT EXISTS)
+      if (!err.message.includes('Duplicate column')) {
+        console.warn('[migration] Avertissement :', err.message);
+      }
+    }
+  }
+};
+
 const startServer = async () => {
   try {
     // 1. Connexion DB
     await testConnection();
 
-    // 2. Synchronisation des modèles (à activer quand les modèles seront définis)
-    // await db.sequelize.sync({ alter: true });
+    // 2. Migrations légères (colonnes ajoutées après la création initiale)
+    await runMigrations(db.sequelize);
     console.log('✅ Modèles chargés.');
 
     // 3. HTTPS en production si certificats fournis, sinon HTTP

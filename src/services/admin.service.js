@@ -161,8 +161,9 @@ const updateShopModules = async (shopId, data) => {
 
   const { modules, is_configured } = data || {};
 
-  // Sequelize ne détecte pas toujours les changements sur les champs JSON :
-  // on force explicitement le dirty-tracking avec changed() + save()
+  // Construire les champs à mettre à jour
+  const updates = {};
+
   if (modules !== undefined) {
     // Sécurité : n'accepter que les clés de modules reconnues et leurs valeurs booléennes.
     // Empêche de stocker en base n'importe quoi envoyé par le client
@@ -174,23 +175,50 @@ const updateShopModules = async (shopId, data) => {
         sanitized[key] = !!modules[key]; // force boolean
       }
     }
-    // Fusionner avec les modules actuels pour ne pas perdre les clés non envoyées
-    const current = shop.modules || {};
-    shop.modules = { ...current, ...sanitized };
-    shop.changed('modules', true);
+    // Récupérer les modules actuels en base via requête brute (évite tout getter Sequelize)
+    const [rows] = await sequelize.query(
+      'SELECT modules FROM shops WHERE id = ?',
+      { replacements: [shopId], type: sequelize.QueryTypes.SELECT }
+    );
+    let current = {};
+    if (rows?.modules) {
+      try {
+        current = typeof rows.modules === 'string' ? JSON.parse(rows.modules) : rows.modules;
+        // Écarter tout objet corrompu (clés numériques = spread de string)
+        const keys = Object.keys(current);
+        if (keys.length > 10 || keys.every(k => /^\d+$/.test(k))) current = {};
+      } catch { current = {}; }
+    }
+    // On ne garde que les clés connues de l'objet courant
+    const cleanCurrent = {};
+    for (const key of KNOWN_MODULES) {
+      if (key in current) cleanCurrent[key] = !!current[key];
+    }
+    updates.modules = JSON.stringify({ ...cleanCurrent, ...sanitized });
   }
+
   if (is_configured !== undefined) {
-    shop.is_configured = is_configured;
-    shop.changed('is_configured', true);
+    updates.is_configured = is_configured ? 1 : 0;
   }
 
-  await shop.save();
+  // Mise à jour via SQL brut pour garantir un payload minimal vers MySQL
+  // (contourne tout getter/setter Sequelize et évite le risque max_allowed_packet)
+  if (Object.keys(updates).length > 0) {
+    const setClauses = Object.keys(updates).map(k => `\`${k}\` = ?`).join(', ');
+    const values     = [...Object.values(updates), shopId];
+    await sequelize.query(
+      `UPDATE shops SET ${setClauses}, updated_at = NOW() WHERE id = ?`,
+      { replacements: values, type: sequelize.QueryTypes.UPDATE }
+    );
+  }
 
+  // Relire la boutique depuis la base pour retourner des données fraîches
+  const fresh = await Shop.findByPk(shopId);
   return {
-    id:            shop.id,
-    nom:           shop.nom,
-    modules:       shop.modules,
-    is_configured: shop.is_configured,
+    id:            fresh.id,
+    nom:           fresh.nom,
+    modules:       fresh.modules,
+    is_configured: fresh.is_configured,
   };
 };
 

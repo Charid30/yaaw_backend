@@ -35,7 +35,10 @@ const createSaleSchema = Joi.object({
     'any.required': 'Le montant reçu est requis.',
   }),
 
-  note: Joi.string().max(500).allow('', null).default(null),
+  note:          Joi.string().max(500).allow('', null).default(null),
+  customer_id:   Joi.string().uuid().allow(null).default(null),
+  customer_nom:  Joi.string().max(150).allow('', null).default(null),
+  remise_montant: Joi.number().min(0).default(0),
 });
 
 module.exports = { createSaleSchema };

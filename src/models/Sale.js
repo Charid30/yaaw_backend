@@ -62,6 +62,12 @@ module.exports = (sequelize) => {
         defaultValue: null,
         comment: 'FK → customers.id (optionnel)',
       },
+      customer_nom: {
+        type: DataTypes.STRING(150),
+        allowNull: true,
+        defaultValue: null,
+        comment: 'Nom libre du client (saisie manuelle sans lien DB)',
+      },
       note: {
         type: DataTypes.TEXT,
         allowNull: true,
